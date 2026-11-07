@@ -1,0 +1,47 @@
+[
+  {
+    "id": "2026-cvpr-invcoss",
+    "title": "InvCoSS: Inversion-driven Continual Self-supervised Learning in Medical Multi-modal Image Pre-training",
+    "shortName": "InvCoSS",
+    "authors": ["Zihao Luo", "Shaohao Rui", "Zhenyu Tang", "Guotai Wang", "Xiaosong Wang"],
+    "venue": "IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+    "venueShort": "CVPR",
+    "year": 2026,
+    "tags": ["醫學影像", "自監督學習", "持續學習", "模型反演", "隱私保護"],
+    "tldr": "持續自監督預訓練時不保存任何舊影像，改從上一階段的模型「反演」出合成影像來代替資料重播；平均表現與保存 5% 真實資料的 MedCoSS 相當，儲存量最多少 590 倍。",
+    "paperUrl": "https://zihaoluoh.github.io/InvCoSS",
+    "codeUrl": null,
+    "addedDate": "2026-11-07",
+    "status": "draft"
+  },
+  {
+    "id": "2024-tnsre-resam",
+    "title": "A Rapid Response System for Elderly Safety Monitoring Using Progressive Hierarchical Action Recognition",
+    "shortName": "RESAM",
+    "authors": ["Han Sun", "Yu Chen"],
+    "venue": "IEEE Transactions on Neural Systems and Rehabilitation Engineering",
+    "venueShort": "TNSRE",
+    "year": 2024,
+    "tags": ["動作辨識", "多模態融合", "隱私保護", "邊緣運算"],
+    "tldr": "先用手錶慣性訊號做快速初篩，只有判定為異常時才啟動骨架影像的 ResNet-20 精確辨識，再以 D-S 證據理論融合兩者；在 UTD-MHAD 上達 97.41% 準確率、反應時間 1.22 秒。",
+    "paperUrl": "https://doi.org/10.1109/TNSRE.2024.3409197",
+    "codeUrl": null,
+    "addedDate": "2026-11-07",
+    "status": "draft"
+  },
+  {
+    "id": "2026-cvm-pranet-v2",
+    "title": "PraNet-V2: Dual-supervised reverse attention for medical image segmentation",
+    "shortName": "PraNet-V2",
+    "authors": ["Bo-Cheng Hu", "Ge-Peng Ji", "Dian Shao", "Deng-Ping Fan"],
+    "venue": "Computational Visual Media",
+    "venueShort": "CVM",
+    "year": 2026,
+    "tags": ["醫學影像", "影像分割", "注意力機制"],
+    "tldr": "把 PraNet-V1「1 減前景機率」的規則式反向注意力，改成前景、背景各自有分割頭與監督的 DSRA 模組，讓反向注意力能用在多類別分割；插進三個 SOTA 模型平均 Dice 提升 0.50%–1.36%。",
+    "paperUrl": "https://doi.org/10.26599/CVM.2025.9450510",
+    "codeUrl": "https://github.com/ai4colonoscopy/PraNet-V2",
+    "addedDate": "2026-11-07",
+    "status": "draft"
+  }
+]

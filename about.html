@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>關於｜論文閱讀筆記</title>
+  <meta name="description" content="這個網站的目的、筆記格式，以及如何用 AI 依 CLAUDE.md 新增論文。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><span class="brand-mark">NOTES</span>論文閱讀筆記</a>
+      <nav class="site-nav">
+        <a href="index.html">論文</a>
+        <a href="about.html" aria-current="page">關於</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="prose">
+    <h1>關於這個網站</h1>
+    <p>這是我（雲科大資工碩一）的論文閱讀筆記。研究所每週都在讀論文，但讀完一個月後常常只記得名字。所以我把每篇論文整理成格式固定的一頁，讓自己和同學能在幾分鐘內回想起重點。</p>
+
+    <h2>每篇筆記的九個區塊</h2>
+    <ol>
+      <li><strong>資訊卡</strong>：作者、發表處、連結、標籤、筆記狀態</li>
+      <li><strong>TL;DR</strong>：一到兩句話說完這篇在做什麼</li>
+      <li><strong>研究問題與動機</strong>：既有方法哪裡不夠好</li>
+      <li><strong>核心方法</strong>：自己重畫的架構圖與關鍵模組說明</li>
+      <li><strong>主要貢獻</strong></li>
+      <li><strong>實驗結果</strong>：關鍵數字，每個都標出自哪張表</li>
+      <li><strong>優點與限制</strong></li>
+      <li><strong>與我研究的關聯</strong></li>
+      <li><strong>相關論文</strong>：站內筆記互相連結</li>
+    </ol>
+
+    <h2>筆記狀態</h2>
+    <p><span class="status status--draft">草稿</span> 表示「優點與限制」「與我研究的關聯」這兩個個人觀點區塊仍是 AI 草擬，我還沒審閱；<span class="status status--reviewed">已審閱</span> 表示已經改成我自己的看法。</p>
+
+    <h2>這個網站怎麼做出來的</h2>
+    <p>專案根目錄有一份 <code>CLAUDE.md</code>，寫明網站的目的、視覺風格、檔案命名、筆記格式和 AI 必須遵守的規則。新增論文時，我把 PDF 交給 AI，請它「照 CLAUDE.md 新增這篇論文」，它會：</p>
+    <ol>
+      <li>依命名規則決定論文 id</li>
+      <li>複製模板，填完九個區塊並畫架構圖</li>
+      <li>在 <code>data/papers.json</code> 新增一筆，首頁自動出現新卡片</li>
+      <li>更新相關論文的雙向連結，最後回報哪些內容待確認</li>
+    </ol>
+    <p>規則寫得夠具體，換一篇論文、換一個 AI、隔一個月再做，產出的頁面都會長得一樣。</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>雲科大資工碩一</span>
+      <span>筆記內容為個人閱讀整理，數字以原論文為準</span>
+    </div>
+  </footer>
+</body>
+</html>

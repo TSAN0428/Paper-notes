@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InvCoSS｜論文閱讀筆記</title>
+  <meta name="description" content="持續自監督預訓練時不保存舊影像，改從上一階段模型反演出合成影像來代替資料重播，表現與 MedCoSS 相當、儲存量最多少 590 倍。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="../index.html"><span class="brand-mark">NOTES</span>論文閱讀筆記</a>
+      <nav class="site-nav">
+        <a href="../index.html">論文</a>
+        <a href="../about.html">關於</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="paper-layout">
+    <aside class="toc">
+      <nav aria-label="本頁目錄">
+        <p class="toc-title">CONTENTS</p>
+        <ol>
+          <li><a href="#tldr">TL;DR</a></li>
+          <li><a href="#problem">研究問題與動機</a></li>
+          <li><a href="#method">核心方法</a></li>
+          <li><a href="#contributions">主要貢獻</a></li>
+          <li><a href="#results">實驗結果</a></li>
+          <li><a href="#assessment">優點與限制</a></li>
+          <li><a href="#relevance">與我研究的關聯</a></li>
+          <li><a href="#related">相關論文</a></li>
+        </ol>
+      </nav>
+    </aside>
+
+    <main>
+      <a class="back-link" href="../index.html">← 回到論文列表</a>
+      <h1 class="paper-title">InvCoSS</h1>
+      <p class="paper-subtitle">InvCoSS: Inversion-driven Continual Self-supervised Learning in Medical Multi-modal Image Pre-training</p>
+
+      <!-- 0. 資訊卡 -->
+      <section class="info-card" id="info" aria-label="論文資訊">
+        <dl>
+          <dt>AUTHORS</dt><dd>Zihao Luo, Shaohao Rui, Zhenyu Tang, Guotai Wang, Xiaosong Wang</dd>
+          <dt>VENUE</dt><dd>IEEE/CVF Conference on Computer Vision and Pattern Recognition（CVPR）, 2026；pp. 42626–42636（年份依 CVF Open Access 版本檔名，待確認）</dd>
+          <dt>PAPER</dt><dd><a href="https://zihaoluoh.github.io/InvCoSS">zihaoluoh.github.io/InvCoSS</a>（專案頁）</dd>
+          <dt>CODE</dt><dd>論文正文未提供程式碼連結（專案頁待確認）</dd>
+          <dt>TAGS</dt><dd class="tags"><span class="tag">醫學影像</span><span class="tag">自監督學習</span><span class="tag">持續學習</span><span class="tag">模型反演</span><span class="tag">隱私保護</span></dd>
+          <dt>NOTED</dt><dd>2026-11-07 <span class="status status--draft">草稿</span></dd>
+        </dl>
+      </section>
+
+      <!-- 1. TL;DR -->
+      <section class="note-section" id="tldr">
+        <h2 data-num="01">TL;DR</h2>
+        <p class="tldr">持續自監督預訓練時不保存任何舊影像，改從上一階段的模型「反演」出合成影像來代替資料重播；平均表現與保存 5% 真實資料的 MedCoSS 相當，儲存量最多少 590 倍。</p>
+      </section>
+
+      <!-- 2. 研究問題與動機 -->
+      <section class="note-section" id="problem">
+        <h2 data-num="02">研究問題與動機</h2>
+        <ul>
+          <li><strong>醫學自監督學習多半只做單一模態</strong>：CT、X 光、MRI 各有各的模型，跨模態泛化差；要湊齊多模態資料聯合訓練又受倫理與隱私限制。</li>
+          <li><strong>靜態訓練不好擴充</strong>：每加一批新資料就要全部重訓，成本極高；一次混合多模態訓練還可能出現模態衝突。</li>
+          <li><strong>持續學習會災難性遺忘</strong>：依序學新模態時，舊知識容易被覆蓋。最有效的解法是資料重播（data replay），但需要保存舊資料，在跨醫院、不能傳輸病人資料的情境下行不通。</li>
+          <li>核心問題：<strong>能不能只靠模型本身保存的資訊，就把舊知識留住？</strong></li>
+        </ul>
+      </section>
+
+      <!-- 3. 核心方法 -->
+      <section class="note-section" id="method">
+        <h2 data-num="03">核心方法</h2>
+        <figure class="diagram">
+          <svg viewBox="0 0 800 310" role="img" aria-label="InvCoSS 流程：用凍結的前一階段模型反演，InvUNet 從雜訊產生合成影像並放入樣本池；新階段模型同時用新模態真實資料與合成樣本訓練，並向舊模型做知識蒸餾">
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" class="dg-head"/>
+              </marker>
+            </defs>
+            <text class="dg-small dg-left" x="10" y="18">① 反演：從舊模型產生合成影像</text>
+            <rect class="dg-box" x="10" y="50" width="90" height="50" rx="6"/>
+            <text class="dg-text" x="55" y="68">雜訊 z</text>
+            <text class="dg-small" x="55" y="86">可學習</text>
+            <rect class="dg-box dg-box--accent" x="130" y="50" width="130" height="50" rx="6"/>
+            <text class="dg-text" x="195" y="68">InvUNet G</text>
+            <text class="dg-small" x="195" y="86">雙分支生成器</text>
+            <rect class="dg-box" x="290" y="50" width="130" height="50" rx="6"/>
+            <text class="dg-text" x="355" y="68">合成影像</text>
+            <text class="dg-small" x="355" y="86">x_syn = G(z)</text>
+            <rect class="dg-box" x="450" y="50" width="140" height="50" rx="6"/>
+            <text class="dg-text" x="520" y="68">f(T−1)</text>
+            <text class="dg-small" x="520" y="86">前一階段模型（凍結）</text>
+            <rect class="dg-box" x="620" y="40" width="170" height="70" rx="6"/>
+            <text class="dg-text" x="705" y="58">反演損失</text>
+            <text class="dg-small" x="705" y="78">L_task + L_norm</text>
+            <text class="dg-small" x="705" y="94">+ L_img + L_rep</text>
+            <path class="dg-arrow" d="M100,75 L128,75" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M260,75 L288,75" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M420,75 L448,75" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M590,75 L618,75" marker-end="url(#ah)"/>
+            <path class="dg-dash" d="M705,40 L705,32 L195,32 L195,48" marker-end="url(#ah)"/>
+            <text class="dg-small" x="450" y="24">梯度回傳，只更新 G 與 z</text>
+
+            <text class="dg-small dg-left" x="10" y="160">② 持續預訓練：新資料 + 合成資料</text>
+            <path class="dg-arrow" d="M355,100 L355,178" marker-end="url(#ah)"/>
+            <rect class="dg-box" x="290" y="180" width="130" height="45" rx="6"/>
+            <text class="dg-text" x="355" y="195">合成樣本池 B_T</text>
+            <text class="dg-small" x="355" y="212">舊模態的替身</text>
+            <rect class="dg-box" x="290" y="245" width="130" height="45" rx="6"/>
+            <text class="dg-text" x="355" y="260">新模態 D_T</text>
+            <text class="dg-small" x="355" y="277">真實資料</text>
+            <rect class="dg-box dg-box--accent" x="450" y="210" width="140" height="50" rx="6"/>
+            <text class="dg-text" x="520" y="228">訓練 f(T)</text>
+            <text class="dg-small" x="520" y="246">MIM + 知識蒸餾</text>
+            <rect class="dg-box" x="620" y="210" width="170" height="50" rx="6"/>
+            <text class="dg-text" x="705" y="228">進入下一階段</text>
+            <text class="dg-small" x="705" y="246">只需保存模型參數</text>
+            <path class="dg-arrow" d="M420,202 L435,202 L435,228 L448,228" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M420,267 L435,267 L435,244 L448,244" marker-end="url(#ah)"/>
+            <path class="dg-dash" d="M520,100 L520,208" marker-end="url(#ah)"/>
+            <text class="dg-small" x="565" y="155">蒸餾</text>
+            <path class="dg-arrow" d="M590,235 L618,235" marker-end="url(#ah)"/>
+          </svg>
+          <figcaption>改繪自原論文 Fig. 1、Fig. 2，只保留主要資料流。</figcaption>
+        </figure>
+
+        <h3>整體流程</h3>
+        <p>沿用 MedCoSS 的持續自監督學習設定，依序學習五種模態：臨床報告 → X 光 → CT → MRI → 病理影像，骨幹為 ViT/B，自監督目標為遮罩影像建模（Masked Image Modeling, MIM）。在第 T 階段：</p>
+        <ol>
+          <li>對前面每個階段的模型做模型反演（model inversion），產生合成資料集，合併成樣本池 B_T。</li>
+          <li>新模型 f(T) 同時用新模態真實資料 D_T 與 B_T 訓練，並搭配對舊模型的特徵蒸餾。</li>
+        </ol>
+        <p>和 MedCoSS 唯一的關鍵差別：重播緩衝區裡放的是<strong>合成影像</strong>，不是真實病人資料。文字模態因為不適用影像反演，仍保留與 MedCoSS 相同的真實文字緩衝區 <span class="src">Sec. 4.1</span>。</p>
+
+        <h3>反演目標</h3>
+        <p>同時最佳化隨機初始化的生成器 G 的參數與一批雜訊潛變數 z <span class="src">Eq. 6</span>：</p>
+        <div class="formula">L_Inv = L_task + α_norm·L_norm + α_img·L_img + α_rep·L_rep    (Eq. 6)
+α_norm = 1,  α_img = 0.1,  α_rep = 0.1</div>
+        <ul>
+          <li><strong>L_task</strong>：讓舊模型對合成影像做 MIM 重建的誤差變小，代表影像「像舊模型看過的東西」<span class="src">Eq. 7</span>。</li>
+          <li><strong>L_norm</strong>：讓合成影像在各正規化層的批次平均與變異數，對齊舊模型訓練時記下的統計量 <span class="src">Eq. 3</span>。</li>
+          <li><strong>L_img</strong>：全變分（total variation）先驗，懲罰相鄰像素差異，抑制雜訊 <span class="src">Eq. 8</span>。</li>
+          <li><strong>L_rep</strong>：排斥式表徵學習，見下方。</li>
+        </ul>
+
+        <h3>InvUNet：保留高頻細節</h3>
+        <p>作者發現常見的「由下往上」生成器直接把低維雜訊放大成影像，高頻細節會嚴重流失。InvUNet 把 z 注入 U-Net 的瓶頸層，拆成兩個分支：輕量的 Memory Cache 分支產生多尺度結構先驗，Inversion 分支專心做語義引導的反演，兩者以 skip connection 相連，讓梯度能回傳到每個尺度。</p>
+
+        <h3>排斥式表徵學習：避免模式崩塌</h3>
+        <p>自監督模型沒有類別標籤可以引導，反演出的影像容易擠在一起、彼此重複。作者維護一個持續的合成特徵池 P，對新產生的每張影像，最小化它和池中所有特徵的餘弦相似度平方，強迫特徵分散 <span class="src">Eq. 5</span>。只有排斥力通常會不穩定，但其他損失在這裡扮演語義錨點，把合成影像拉在學過的分佈裡。</p>
+      </section>
+
+      <!-- 4. 主要貢獻 -->
+      <section class="note-section" id="contributions">
+        <h2 data-num="04">主要貢獻</h2>
+        <ol>
+          <li>提出 InvCoSS：作者稱是第一個把模型反演用在<strong>自監督</strong>持續學習的框架，完全不保存原始影像也能減緩災難性遺忘。</li>
+          <li>設計 InvUNet 生成器，用多尺度融合解決反演影像高頻細節流失的問題，並能處理 2D 與 3D 醫學影像。</li>
+          <li>提出排斥式表徵學習，在沒有類別引導的情況下避免合成影像模式崩塌。</li>
+          <li>在四種影像模態、九個下游任務上，表現與資料重播方法相當或更好，儲存量最多降低 590 倍。</li>
+        </ol>
+      </section>
+
+      <!-- 5. 實驗結果 -->
+      <section class="note-section" id="results">
+        <h2 data-num="05">實驗結果</h2>
+        <p><strong>預訓練資料：</strong>MIMIC-CXR（報告與 X 光）、DeepLesion（CT）、ADNI（MRI）、TCGA 七個子計畫（病理）。<br>
+        <strong>下游任務（9 個）：</strong>PubMed20k 報告分類、ChestXR 分類、QaTa-COV19 分割、RICORD 分類、LiTS 分割、VS 與 LA 的 MRI 分割、NCH 組織分類、GlaS 腺體分割。<br>
+        <strong>指標：</strong>分類用 ACC／AUC／F1，分割用 DSC 與 HD95；AVG↑ 為所有「越高越好」指標的平均，AVG↓ 為 HD 的平均。結果為三個隨機種子的平均 <span class="src">Sec. 4.1</span>。<br>
+        <strong>公平比較：</strong>資料重播方法保留 5% 資料，InvCoSS 產生等量的合成樣本。</p>
+
+        <h3>整體比較（九個任務平均）</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>方法</th><th>類型</th><th>AVG↑</th><th>AVG↓</th></tr></thead>
+            <tbody>
+              <tr><td>Joint SSL*</td><td>靜態聯合訓練</td><td>87.65</td><td>29.78</td></tr>
+              <tr><td>ER</td><td>資料重播</td><td>85.45</td><td>34.29</td></tr>
+              <tr><td>MedCoSS</td><td>資料重播</td><td>89.03</td><td>25.99</td></tr>
+              <tr><td>EWC</td><td>不存資料</td><td>86.27</td><td>34.51</td></tr>
+              <tr><td>PackNet</td><td>不存資料</td><td>84.42</td><td>43.51</td></tr>
+              <tr><td>CaSSLe</td><td>不存資料</td><td>86.88</td><td>31.69</td></tr>
+              <tr class="hl"><td>InvCoSS</td><td>不存資料</td><td>89.17</td><td>25.14</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-caption">InvCoSS 在不存資料的方法中最好，平均甚至略優於存了 5% 真實資料的 MedCoSS（AVG↑ <mark>89.17 vs. 89.03</mark>），比 ER 高 3.72。 <span class="src">Table 1</span></p>
+
+        <h3>與 MedCoSS 逐項比較（節錄）</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>任務</th><th>指標</th><th>MedCoSS</th><th>InvCoSS</th><th>差異</th></tr></thead>
+            <tbody>
+              <tr><td>RICORD（CT）</td><td>ACC</td><td>83.33</td><td>84.52</td><td><span class="delta delta--up">+1.19</span></td></tr>
+              <tr><td>RICORD（CT）</td><td>AUC</td><td>88.74</td><td>89.23</td><td><span class="delta delta--up">+0.49</span></td></tr>
+              <tr><td>LiTS（CT）</td><td>DSC</td><td>72.01</td><td>72.14</td><td><span class="delta delta--up">+0.13</span></td></tr>
+              <tr><td>ChestXR（X 光）</td><td>ACC</td><td>94.31</td><td>94.09</td><td><span class="delta delta--down">−0.22</span></td></tr>
+              <tr><td>VS（MRI）</td><td>HD ↓</td><td>7.80</td><td>10.25</td><td><span class="delta delta--down">+2.45</span></td></tr>
+              <tr><td>LA（MRI）</td><td>HD ↓</td><td>9.55</td><td>10.76</td><td><span class="delta delta--down">+1.21</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-caption">CT 任務上 InvCoSS 較好，但 MRI 分割的邊界距離 HD（越低越好）明顯輸給 MedCoSS，平均值掩蓋了這個差異。 <span class="src">Table 1</span></p>
+
+        <h3>消融：各元件的效果（六個影像任務）</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>組合</th><th>AVG↑</th><th>AVG↓</th></tr></thead>
+            <tbody>
+              <tr><td>L_task + L_norm + G</td><td>86.12</td><td>27.12</td></tr>
+              <tr><td>+ L_img</td><td>86.75</td><td>24.29</td></tr>
+              <tr class="hl"><td>+ L_img + L_rep（完整）</td><td>88.03</td><td>20.11</td></tr>
+              <tr><td>不用生成器 G，直接最佳化影像</td><td colspan="2">3D 任務記憶體不足（OOM）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-caption">加入 L_rep 後 RICORD ACC 由 82.14 升到 84.52，對 CT 與 MRI 幫助最大。 <span class="src">Table 2</span></p>
+
+        <h3>生成器比較（只用 10K 張合成影像預訓練）</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>生成器</th><th>參數量</th><th>ChestXR ACC</th><th>QaTa DSC</th></tr></thead>
+            <tbody>
+              <tr><td>不用生成器</td><td>—</td><td>89.12</td><td>74.42</td></tr>
+              <tr><td>Bottom-to-top</td><td>10.6M</td><td>90.77</td><td>75.65</td></tr>
+              <tr><td>Bottom-to-top（較大）</td><td>25.9M</td><td>91.21</td><td>75.49</td></tr>
+              <tr class="hl"><td>InvUNet</td><td>7.7M</td><td>92.27</td><td>76.23</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-caption">參數最少卻最好，說明效果來自多尺度結構而不是模型變大。 <span class="src">Table 3</span></p>
+
+        <h3>其他觀察</h3>
+        <ul>
+          <li><strong>儲存量</strong>：相較 MedCoSS 降低 <mark>7×–590×</mark>，只需保存模型參數與正規化統計量 <span class="src">Fig. 6(a)</span></li>
+          <li><strong>緩衝區大小</strong>：1% 時 InvCoSS 優於 MedCoSS，5% 與 10% 時兩者相當；作者推測少量樣本時，合成影像比聚類挑出的真實子集更能代表原分佈 <span class="src">Fig. 7</span></li>
+          <li><strong>遺忘程度</strong>：單純依序預訓練（SeqSSL）在 ChestXR 上嚴重遺忘，InvCoSS 與 MedCoSS 都能維持穩定 <span class="src">Fig. 6(b)</span></li>
+        </ul>
+      </section>
+
+      <!-- 6. 優點與限制 -->
+      <section class="note-section" id="assessment">
+        <h2 data-num="06">優點與限制</h2>
+        <p class="draft-note">草稿，待本人修改：此區塊為 AI 依論文內容草擬的觀點。</p>
+        <h3>優點</h3>
+        <ul>
+          <li>切中醫療資料無法跨院保存、傳輸的實際限制，問題設定有說服力。</li>
+          <li>只需要模型參數與正規化統計量，不需要額外訓練 GAN 或 Diffusion 等生成模型。</li>
+          <li>消融完整：損失項、生成器架構、緩衝區大小、模態順序（附錄）都有驗證。</li>
+        </ul>
+        <h3>限制</h3>
+        <ul>
+          <li>文字模態仍保留真實資料緩衝區，「完全不存資料」只對影像模態成立。</li>
+          <li>隱私保護的論證主要是「合成影像缺乏細節」的視覺比較（附錄 D.2），正文沒有看到成員推論攻擊等量化隱私評估（待確認附錄）。</li>
+          <li>反演本身需要額外最佳化時間，正文沒有報告反演所需的計算成本。</li>
+          <li>MRI 分割的 HD 指標明顯輸給 MedCoSS，平均值優勢主要來自 CT 任務。</li>
+        </ul>
+      </section>
+
+      <!-- 7. 與我研究的關聯 -->
+      <section class="note-section" id="relevance">
+        <h2 data-num="07">與我研究的關聯</h2>
+        <p class="draft-note">草稿，待本人修改：此區塊為 AI 依論文內容草擬的觀點。</p>
+        <ul>
+          <li>監控類應用若要逐步加入新場景（例如從室內擴充到戶外），又不能長期保存影像，就會遇到同樣的「持續學習＋不能存舊資料」問題，模型反演是可參考的方向。</li>
+          <li>排斥式損失讓合成樣本彼此分散的想法，可以借用在資料不足時產生多樣化的訓練樣本。</li>
+        </ul>
+      </section>
+
+      <!-- 8. 相關論文 -->
+      <section class="note-section" id="related">
+        <h2 data-num="08">相關論文</h2>
+        <ul class="related-list">
+          <li><a href="2026-cvm-pranet-v2.html">PraNet-V2</a><span>同為醫學影像；PraNet-V2 改良分割模型本身，InvCoSS 改良分割前的預訓練。</span></li>
+          <li><a href="2024-tnsre-resam.html">RESAM</a><span>同樣以隱私保護為設計動機：RESAM 用骨架取代 RGB，InvCoSS 用合成影像取代真實資料。</span></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>雲科大資工碩一</span>
+      <span>筆記內容為個人閱讀整理，數字以原論文為準</span>
+    </div>
+  </footer>
+</body>
+</html>

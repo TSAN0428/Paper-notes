@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>論文閱讀筆記</title>
+  <meta name="description" content="個人論文閱讀筆記：每篇論文用同一套格式整理問題、方法、實驗與心得。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><span class="brand-mark">NOTES</span>論文閱讀筆記</a>
+      <nav class="site-nav">
+        <a href="index.html" aria-current="page">論文</a>
+        <a href="about.html">關於</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>讀過的論文，用同一種方式記下來</h1>
+      <p>每篇論文一頁，固定九個區塊：TL;DR、研究問題、核心方法、主要貢獻、實驗結果、優缺點、與我研究的關聯、相關論文。數字都標註出自論文哪張表。</p>
+      <div class="hero-stats" id="stats" aria-live="polite"></div>
+    </section>
+
+    <section class="toolbar" aria-label="篩選">
+      <input class="search" id="search" type="search" placeholder="搜尋標題、作者或摘要…" aria-label="搜尋論文">
+      <select class="sort" id="sort" aria-label="排序方式">
+        <option value="added">依筆記日期</option>
+        <option value="year">依發表年份</option>
+        <option value="name">依名稱</option>
+      </select>
+      <div class="tag-filter" id="tag-filter" role="group" aria-label="標籤篩選"></div>
+    </section>
+
+    <section class="paper-grid" id="paper-grid" aria-live="polite"></section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>雲科大資工碩一</span>
+      <span>筆記格式規範見 <a href="about.html">關於</a></span>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

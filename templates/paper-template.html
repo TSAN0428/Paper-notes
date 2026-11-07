@@ -1,0 +1,148 @@
+<!doctype html>
+<!--
+  論文筆記頁模板
+  使用方式：複製到 papers/<id>.html，替換所有 {{...}}。完成後檔案中不得殘留 {{
+  規則：CLAUDE.md 第 6 節（九個區塊、順序與 id 不可更動）
+-->
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{SHORT_NAME}}｜論文閱讀筆記</title>
+  <meta name="description" content="{{TLDR}}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="../index.html"><span class="brand-mark">NOTES</span>論文閱讀筆記</a>
+      <nav class="site-nav">
+        <a href="../index.html">論文</a>
+        <a href="../about.html">關於</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="paper-layout">
+    <aside class="toc">
+      <nav aria-label="本頁目錄">
+        <p class="toc-title">CONTENTS</p>
+        <ol>
+          <li><a href="#tldr">TL;DR</a></li>
+          <li><a href="#problem">研究問題與動機</a></li>
+          <li><a href="#method">核心方法</a></li>
+          <li><a href="#contributions">主要貢獻</a></li>
+          <li><a href="#results">實驗結果</a></li>
+          <li><a href="#assessment">優點與限制</a></li>
+          <li><a href="#relevance">與我研究的關聯</a></li>
+          <li><a href="#related">相關論文</a></li>
+        </ol>
+      </nav>
+    </aside>
+
+    <main>
+      <a class="back-link" href="../index.html">← 回到論文列表</a>
+      <h1 class="paper-title">{{SHORT_NAME}}</h1>
+      <p class="paper-subtitle">{{FULL_TITLE}}</p>
+
+      <!-- 0. 資訊卡 -->
+      <section class="info-card" id="info" aria-label="論文資訊">
+        <dl>
+          <dt>AUTHORS</dt><dd>{{AUTHORS}}</dd>
+          <dt>VENUE</dt><dd>{{VENUE_FULL}}（{{VENUE_SHORT}}）, {{YEAR}}</dd>
+          <dt>PAPER</dt><dd><a href="{{PAPER_URL}}">{{PAPER_URL_TEXT}}</a></dd>
+          <dt>CODE</dt><dd>{{CODE_LINK_或寫「論文未提供」}}</dd>
+          <dt>TAGS</dt><dd class="tags">{{<span class="tag">標籤</span> 重複}}</dd>
+          <dt>NOTED</dt><dd>{{YYYY-MM-DD}} <span class="status status--draft">草稿</span></dd>
+        </dl>
+      </section>
+
+      <!-- 1. TL;DR -->
+      <section class="note-section" id="tldr">
+        <h2 data-num="01">TL;DR</h2>
+        <p class="tldr">{{一到兩句話，與 papers.json 的 tldr 一致}}</p>
+      </section>
+
+      <!-- 2. 研究問題與動機 -->
+      <section class="note-section" id="problem">
+        <h2 data-num="02">研究問題與動機</h2>
+        <ul>
+          <li>{{既有方法的不足 1}}</li>
+          <li>{{既有方法的不足 2}}</li>
+        </ul>
+      </section>
+
+      <!-- 3. 核心方法 -->
+      <section class="note-section" id="method">
+        <h2 data-num="03">核心方法</h2>
+        <figure class="diagram">
+          <!-- 只用 .dg-* class，不寫死顏色 -->
+          {{<svg viewBox="0 0 720 260" role="img" aria-label="架構圖說明">…</svg>}}
+          <figcaption>{{圖說，註明「改繪自原論文 Fig. N」}}</figcaption>
+        </figure>
+        <h3>{{模組名稱}}</h3>
+        <p>{{說明}}</p>
+        <div class="formula">{{必要公式}}   (Eq. N)</div>
+      </section>
+
+      <!-- 4. 主要貢獻 -->
+      <section class="note-section" id="contributions">
+        <h2 data-num="04">主要貢獻</h2>
+        <ol>
+          <li>{{貢獻 1}}</li>
+          <li>{{貢獻 2}}</li>
+        </ol>
+      </section>
+
+      <!-- 5. 實驗結果 -->
+      <section class="note-section" id="results">
+        <h2 data-num="05">實驗結果</h2>
+        <p><strong>資料集：</strong>{{…}}<br><strong>指標：</strong>{{…}}</p>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>{{欄位}}</th><th>{{欄位}}</th></tr></thead>
+            <tbody><tr><td>{{…}}</td><td>{{數字}} <span class="delta delta--up">+0.00</span></td></tr></tbody>
+          </table>
+        </div>
+        <p class="table-caption">{{表說明}} <span class="src">Table N</span></p>
+      </section>
+
+      <!-- 6. 優點與限制 -->
+      <section class="note-section" id="assessment">
+        <h2 data-num="06">優點與限制</h2>
+        <p class="draft-note">草稿，待本人修改：此區塊為 AI 依論文內容草擬的觀點。</p>
+        <h3>優點</h3>
+        <ul><li>{{…}}</li></ul>
+        <h3>限制</h3>
+        <ul><li>{{…}}</li></ul>
+      </section>
+
+      <!-- 7. 與我研究的關聯 -->
+      <section class="note-section" id="relevance">
+        <h2 data-num="07">與我研究的關聯</h2>
+        <p class="draft-note">草稿，待本人修改：此區塊為 AI 依論文內容草擬的觀點。</p>
+        <ul><li>{{…}}</li></ul>
+      </section>
+
+      <!-- 8. 相關論文（雙向連結） -->
+      <section class="note-section" id="related">
+        <h2 data-num="08">相關論文</h2>
+        <ul class="related-list">
+          <li><a href="{{其他 id}}.html">{{名稱}}</a><span>{{關聯原因}}</span></li>
+        </ul>
+        <!-- 沒有相關筆記時改為：<p>目前站內沒有相關筆記。</p> -->
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>雲科大資工碩一</span>
+      <span>筆記內容為個人閱讀整理，數字以原論文為準</span>
+    </div>
+  </footer>
+</body>
+</html>

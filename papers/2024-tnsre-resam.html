@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RESAM｜論文閱讀筆記</title>
+  <meta name="description" content="先用手錶慣性訊號快速初篩，判定異常才啟動骨架影像 ResNet-20 精確辨識，再以 D-S 證據理論融合，兼顧準確率與反應時間的獨居長者安全監測系統。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="../index.html"><span class="brand-mark">NOTES</span>論文閱讀筆記</a>
+      <nav class="site-nav">
+        <a href="../index.html">論文</a>
+        <a href="../about.html">關於</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="paper-layout">
+    <aside class="toc">
+      <nav aria-label="本頁目錄">
+        <p class="toc-title">CONTENTS</p>
+        <ol>
+          <li><a href="#tldr">TL;DR</a></li>
+          <li><a href="#problem">研究問題與動機</a></li>
+          <li><a href="#method">核心方法</a></li>
+          <li><a href="#contributions">主要貢獻</a></li>
+          <li><a href="#results">實驗結果</a></li>
+          <li><a href="#assessment">優點與限制</a></li>
+          <li><a href="#relevance">與我研究的關聯</a></li>
+          <li><a href="#related">相關論文</a></li>
+        </ol>
+      </nav>
+    </aside>
+
+    <main>
+      <a class="back-link" href="../index.html">← 回到論文列表</a>
+      <h1 class="paper-title">RESAM</h1>
+      <p class="paper-subtitle">A Rapid Response System for Elderly Safety Monitoring Using Progressive Hierarchical Action Recognition</p>
+
+      <!-- 0. 資訊卡 -->
+      <section class="info-card" id="info" aria-label="論文資訊">
+        <dl>
+          <dt>AUTHORS</dt><dd>Han Sun, Yu Chen（Binghamton University）</dd>
+          <dt>VENUE</dt><dd>IEEE Transactions on Neural Systems and Rehabilitation Engineering（TNSRE）, 2024；Vol. 32, pp. 2134–2142</dd>
+          <dt>PAPER</dt><dd><a href="https://doi.org/10.1109/TNSRE.2024.3409197">doi.org/10.1109/TNSRE.2024.3409197</a></dd>
+          <dt>CODE</dt><dd>論文未提供</dd>
+          <dt>TAGS</dt><dd class="tags"><span class="tag">動作辨識</span><span class="tag">多模態融合</span><span class="tag">隱私保護</span><span class="tag">邊緣運算</span></dd>
+          <dt>NOTED</dt><dd>2026-11-07 <span class="status status--draft">草稿</span></dd>
+        </dl>
+      </section>
+
+      <!-- 1. TL;DR -->
+      <section class="note-section" id="tldr">
+        <h2 data-num="01">TL;DR</h2>
+        <p class="tldr">先用手錶慣性訊號做快速初篩，只有判定為異常時才啟動骨架影像的 ResNet-20 精確辨識，再以 D-S 證據理論融合兩者；在 UTD-MHAD 上達 97.41% 準確率、反應時間 1.22 秒。</p>
+      </section>
+
+      <!-- 2. 研究問題與動機 -->
+      <section class="note-section" id="problem">
+        <h2 data-num="02">研究問題與動機</h2>
+        <p>人口老化讓獨居長者的安全監測需求增加，人體動作辨識（Human Action Recognition, HAR）是可行方向，但現有方法難以同時兼顧<strong>準確率</strong>與<strong>反應時間</strong>：</p>
+        <ul>
+          <li><strong>慣性感測器</strong>（加速度計、陀螺儀）便宜、速度快，但缺乏情境與 3D 資訊；作者引用的例子是只用手腕加速度計的深度學習跌倒偵測僅約 86% 準確率。</li>
+          <li><strong>RGB 影像</strong>資訊豐富、準確率高，但運算與儲存成本大，而且在家中裝攝影機有隱私疑慮。</li>
+          <li><strong>骨架資料</strong>只記錄關節位置，保留動作結構又不暴露外觀，資料量也小，適合與慣性資料互補。</li>
+        </ul>
+      </section>
+
+      <!-- 3. 核心方法 -->
+      <section class="note-section" id="method">
+        <h2 data-num="03">核心方法</h2>
+        <figure class="diagram">
+          <svg viewBox="0 0 800 310" role="img" aria-label="RESAM 流程：手錶慣性訊號經 KPCA 與分類器快速判斷，正常則存到雲端；異常時才啟動骨架影像 ResNet-20 辨識，最後與慣性結果以 D-S 證據理論融合並發出警報">
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" class="dg-head"/>
+              </marker>
+            </defs>
+            <text class="dg-small dg-left" x="10" y="20">① 快速反應：慣性訊號</text>
+            <rect class="dg-box" x="10" y="40" width="110" height="50" rx="6"/>
+            <text class="dg-text" x="65" y="58">智慧手錶</text>
+            <text class="dg-small" x="65" y="76">IMU 6 軸</text>
+            <rect class="dg-box" x="150" y="40" width="100" height="50" rx="6"/>
+            <text class="dg-text" x="200" y="58">KPCA</text>
+            <text class="dg-small" x="200" y="76">RBF kernel</text>
+            <rect class="dg-box" x="280" y="40" width="140" height="50" rx="6"/>
+            <text class="dg-text" x="350" y="58">分類器</text>
+            <text class="dg-small" x="350" y="76">SVM / RF / XGBoost</text>
+            <polygon class="dg-box dg-box--accent" points="490,35 524,65 490,95 456,65"/>
+            <text class="dg-text" x="490" y="65">異常？</text>
+            <rect class="dg-box" x="580" y="40" width="190" height="50" rx="6"/>
+            <text class="dg-text" x="675" y="58">雲端儲存</text>
+            <text class="dg-small" x="675" y="76">供長期健康狀態分析</text>
+            <path class="dg-arrow" d="M120,65 L148,65" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M250,65 L278,65" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M420,65 L454,65" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M524,65 L578,65" marker-end="url(#ah)"/>
+            <text class="dg-small" x="550" y="54">否</text>
+            <path class="dg-arrow" d="M490,95 L490,198" marker-end="url(#ah)"/>
+            <text class="dg-small" x="504" y="140">是</text>
+
+            <text class="dg-small dg-left" x="10" y="180">② 精確辨識：骨架影像</text>
+            <rect class="dg-box" x="10" y="200" width="110" height="50" rx="6"/>
+            <text class="dg-text" x="65" y="218">Kinect</text>
+            <text class="dg-small" x="65" y="236">20 個關節點</text>
+            <rect class="dg-box" x="150" y="200" width="150" height="50" rx="6"/>
+            <text class="dg-text" x="225" y="218">骨架前處理</text>
+            <text class="dg-small" x="225" y="236">以髖為原點、脊椎長正規化</text>
+            <rect class="dg-box" x="420" y="200" width="140" height="50" rx="6"/>
+            <text class="dg-text" x="490" y="218">ResNet-20</text>
+            <text class="dg-small" x="490" y="236">輸入 19×3×20</text>
+            <rect class="dg-box dg-box--accent" x="600" y="200" width="100" height="50" rx="6"/>
+            <text class="dg-text" x="650" y="218">D-S 融合</text>
+            <text class="dg-small" x="650" y="236">Bel / Pl</text>
+            <rect class="dg-box" x="720" y="200" width="70" height="50" rx="6"/>
+            <text class="dg-text" x="755" y="225">警報</text>
+            <path class="dg-arrow" d="M120,225 L148,225" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M300,225 L418,225" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M560,225 L598,225" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M700,225 L718,225" marker-end="url(#ah)"/>
+            <path class="dg-dash" d="M350,90 L350,150 L380,150 L380,285 L650,285 L650,252" marker-end="url(#ah)"/>
+            <text class="dg-small" x="515" y="298">慣性分類結果（證據 I）</text>
+          </svg>
+          <figcaption>改繪自原論文 Fig. 1，只保留主要資料流。</figcaption>
+        </figure>
+
+        <h3>第一階段：慣性訊號快速初篩</h3>
+        <p>手錶的 3 軸加速度與 3 軸角速度組成 6 維向量序列。先用核主成分分析（Kernel PCA, KPCA，RBF kernel）把資料映射到高維空間做非線性特徵擷取，再分別用 SVM（一對多）、隨機森林、XGBoost 分類 <span class="src">Sec. II-B, II-C</span>。這一步的目的是<strong>快</strong>：先判斷是不是危險動作，並壓低漏判率。</p>
+
+        <h3>第二階段：骨架影像精確辨識</h3>
+        <p>初篩判為異常時，才對同步收集的骨架資料做精確分類。前處理有兩步 <span class="src">Sec. II-D</span>：</p>
+        <ul>
+          <li>以髖部中心為原點，其餘 19 個關節相對座標組成每幀 19×3 的特徵，消除與攝影機距離的影響。</li>
+          <li>用「髖中心到脊椎中點」的距離做正規化，消除身高差異。</li>
+        </ul>
+        <p>整段動作排成 19×3×20 的小影像，送入專為小尺寸影像設計的 ResNet-20 分類 <span class="src">Table I</span>。</p>
+
+        <h3>決策級融合：Dempster–Shafer 證據理論</h3>
+        <p>把慣性分類（I）與骨架分類（S）各自視為一個證據來源，用 Dempster 組合規則合併兩者對各假設的信任質量，再比較信任度（Belief）與似真度（Plausibility）做最後決定 <span class="src">Eq. 22–25</span>。</p>
+        <div class="formula">m(A) = 1/(1−k) · Σ_{B∩C=A} m_I(B)·m_S(C)      (Eq. 22)
+k    = Σ_{B∩C=∅} m_I(B)·m_S(C)               (Eq. 23)</div>
+        <p>不論是否異常，所有資料都會存到雲端，供長期健康狀態分析。</p>
+      </section>
+
+      <!-- 4. 主要貢獻 -->
+      <section class="note-section" id="contributions">
+        <h2 data-num="04">主要貢獻</h2>
+        <ol>
+          <li><strong>即時反應</strong>：用輕量的慣性分類當前置過濾器，只在必要時啟動較慢的骨架辨識，讓系統能快速回應危險行為。</li>
+          <li><strong>保護隱私</strong>：以骨架取代 RGB 影像，只處理關節位置，不保存外觀資訊。</li>
+          <li><strong>準確且穩健</strong>：以 D-S 證據理論做決策級融合，結合兩種模態的優點。</li>
+          <li>建立一個針對長者風險行為設計的自收資料集（含跌倒、咳嗽、頭痛、嘔吐等 12 類動作）。</li>
+        </ol>
+      </section>
+
+      <!-- 5. 實驗結果 -->
+      <section class="note-section" id="results">
+        <h2 data-num="05">實驗結果</h2>
+        <p><strong>資料集：</strong>UTD-MHAD（27 類動作，Kinect + 穿戴式慣性感測器同步收集）；自收資料集（3 台 Kinect V2 從前、右、後同時拍攝 + TicWatch Pro3，15 位受試者、389 筆、12 類動作） <span class="src">Sec. III-A</span> <span class="src">Table II</span><br>
+        <strong>指標：</strong>準確率、反應時間、功耗，以及醫療情境特別重視的漏判率 FNR = FN / (FN + TP) <span class="src">Eq. 26</span></p>
+
+        <h3>第一階段：慣性訊號辨識（準確率 %）</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>資料來源</th><th>動作數</th><th>分類器</th><th>準確率</th></tr></thead>
+            <tbody>
+              <tr><td>UTD-MHAD 穿戴感測器</td><td>27</td><td>SVM</td><td>80.69</td></tr>
+              <tr><td>UTD-MHAD 穿戴感測器</td><td>27</td><td>Random Forest</td><td>91.89</td></tr>
+              <tr><td>UTD-MHAD 穿戴感測器</td><td>27</td><td>XGBoost</td><td>95.27</td></tr>
+              <tr class="hl"><td>TicWatch（自收）</td><td>12</td><td>XGBoost</td><td>97.73</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-caption">XGBoost 三者最佳。漏判率 FNR 低至 <mark>1.2%</mark> <span class="src">Sec. III-B-1</span>。注意：Table III 的標題寫「Skeleton-Based」，但表格內容與內文都是慣性感測器結果，疑似標題誤植（待確認）。 <span class="src">Table III</span></p>
+
+        <h3>第二階段與融合結果</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>方法</th><th>資料集</th><th>準確率 %</th><th>反應時間</th><th>功耗</th></tr></thead>
+            <tbody>
+              <tr><td>骨架 ResNet-20</td><td>UTD-MHAD</td><td>95.98</td><td>—</td><td>—</td></tr>
+              <tr><td>骨架 ResNet-20</td><td>自收</td><td>96.22</td><td>—</td><td>—</td></tr>
+              <tr class="hl"><td>RESAM（融合）</td><td>UTD-MHAD</td><td>97.41</td><td>1.22 s</td><td>60.2 mW/sample</td></tr>
+              <tr class="hl"><td>RESAM（融合）</td><td>自收</td><td>99.02</td><td>1.24 s</td><td>58.6 mW/sample</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-caption">融合後在自收資料集達 <mark>99.02%</mark>。同表中另一個「骨架 + 慣性融合」方法 [44] 準確率 97.71% 略高，但反應時間 4.63 s；兩者是否用同一資料集，表中未說明（待確認）。 <span class="src">Table IV</span> <span class="src">Table V</span></p>
+
+        <h3>不同硬體的反應時間</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>裝置</th><th>Raspberry Pi 4</th><th>GTX 1080</th><th>RTX 4080</th><th>RTX A5000</th></tr></thead>
+            <tbody>
+              <tr><td>反應時間（秒）</td><td>36.5</td><td>2.04</td><td>1.40</td><td>1.22</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-caption">作者以 2017 年報告中都市約 7 分鐘、鄉村 15 分鐘以上的緊急救護到達時間對照，認為樹莓派上約半分鐘的延遲仍可接受。 <span class="src">Table VI</span> <span class="src">Sec. III-B-3</span></p>
+      </section>
+
+      <!-- 6. 優點與限制 -->
+      <section class="note-section" id="assessment">
+        <h2 data-num="06">優點與限制</h2>
+        <p class="draft-note">草稿，待本人修改：此區塊為 AI 依論文內容草擬的觀點。</p>
+        <h3>優點</h3>
+        <ul>
+          <li>「快篩 + 精判」的漸進式設計很務實，把昂貴的計算留給真正需要的時候。</li>
+          <li>以 FNR 作為重點指標，符合醫療安全情境「寧可誤報、不可漏報」的需求。</li>
+          <li>有在樹莓派上實測，讓邊緣部署的討論有具體數字。</li>
+        </ul>
+        <h3>限制</h3>
+        <ul>
+          <li>自收資料集規模小（15 人、389 筆），且是實驗室模擬的居家環境，咳嗽、頭痛等症狀也是受試者模擬出來的。</li>
+          <li>骨架辨識只在初篩判為異常時才啟動，第一階段若漏判，第二階段就沒有機會補救；整體 FNR 取決於第一階段（待確認論文是否有報告融合後的 FNR）。</li>
+          <li>1.22 秒是在 RTX A5000 上的數字，論文設定的實際使用者環境（樹莓派）需要 36.5 秒。</li>
+          <li>比較表混合了不同資料集、動作數與感測器，各方法之間不完全是公平比較。</li>
+          <li>需要同時有攝影機與穿戴裝置，且兩者必須時間同步，作者也在結論提到同步是一大挑戰。</li>
+        </ul>
+      </section>
+
+      <!-- 7. 與我研究的關聯 -->
+      <section class="note-section" id="relevance">
+        <h2 data-num="07">與我研究的關聯</h2>
+        <p class="draft-note">草稿，待本人修改：此區塊為 AI 依論文內容草擬的觀點。</p>
+        <ul>
+          <li>兩階段架構可借用到其他即時監控任務：先用輕量模型快速篩選，只有可疑時才對該區域跑較重的辨識模型，降低持續監控的運算量。</li>
+          <li>骨架姿態可以當作物件偵測以外的行為線索，兩者做決策級融合，處理目標物太小、看不清楚的情況。</li>
+          <li>D-S 證據理論是一個不需重新訓練、就能合併多個模型判斷的方法，可作為多模型融合的備選方案。</li>
+        </ul>
+      </section>
+
+      <!-- 8. 相關論文 -->
+      <section class="note-section" id="related">
+        <h2 data-num="08">相關論文</h2>
+        <ul class="related-list">
+          <li><a href="2026-cvpr-invcoss.html">InvCoSS</a><span>同樣以隱私保護為設計動機：RESAM 用骨架取代 RGB，InvCoSS 用合成影像取代保存真實資料。</span></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>雲科大資工碩一</span>
+      <span>筆記內容為個人閱讀整理，數字以原論文為準</span>
+    </div>
+  </footer>
+</body>
+</html>

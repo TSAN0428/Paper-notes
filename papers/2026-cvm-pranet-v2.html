@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PraNet-V2｜論文閱讀筆記</title>
+  <meta name="description" content="把 PraNet-V1 規則式的反向注意力改成前景、背景各自監督的 DSRA 模組，讓反向注意力能用在多類別醫學影像分割。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="../index.html"><span class="brand-mark">NOTES</span>論文閱讀筆記</a>
+      <nav class="site-nav">
+        <a href="../index.html">論文</a>
+        <a href="../about.html">關於</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="paper-layout">
+    <aside class="toc">
+      <nav aria-label="本頁目錄">
+        <p class="toc-title">CONTENTS</p>
+        <ol>
+          <li><a href="#tldr">TL;DR</a></li>
+          <li><a href="#problem">研究問題與動機</a></li>
+          <li><a href="#method">核心方法</a></li>
+          <li><a href="#contributions">主要貢獻</a></li>
+          <li><a href="#results">實驗結果</a></li>
+          <li><a href="#assessment">優點與限制</a></li>
+          <li><a href="#relevance">與我研究的關聯</a></li>
+          <li><a href="#related">相關論文</a></li>
+        </ol>
+      </nav>
+    </aside>
+
+    <main>
+      <a class="back-link" href="../index.html">← 回到論文列表</a>
+      <h1 class="paper-title">PraNet-V2</h1>
+      <p class="paper-subtitle">PraNet-V2: Dual-supervised reverse attention for medical image segmentation</p>
+
+      <!-- 0. 資訊卡 -->
+      <section class="info-card" id="info" aria-label="論文資訊">
+        <dl>
+          <dt>AUTHORS</dt><dd>Bo-Cheng Hu, Ge-Peng Ji, Dian Shao, Deng-Ping Fan</dd>
+          <dt>VENUE</dt><dd>Computational Visual Media（CVM）, 2026；Vol. 12, No. 2, pp. 493–500（Short Communication）</dd>
+          <dt>PAPER</dt><dd><a href="https://doi.org/10.26599/CVM.2025.9450510">doi.org/10.26599/CVM.2025.9450510</a></dd>
+          <dt>CODE</dt><dd><a href="https://github.com/ai4colonoscopy/PraNet-V2">github.com/ai4colonoscopy/PraNet-V2</a></dd>
+          <dt>TAGS</dt><dd class="tags"><span class="tag">醫學影像</span><span class="tag">影像分割</span><span class="tag">注意力機制</span></dd>
+          <dt>NOTED</dt><dd>2026-11-07 <span class="status status--draft">草稿</span></dd>
+        </dl>
+      </section>
+
+      <!-- 1. TL;DR -->
+      <section class="note-section" id="tldr">
+        <h2 data-num="01">TL;DR</h2>
+        <p class="tldr">把 PraNet-V1「1 減前景機率」的規則式反向注意力，改成前景、背景各自有分割頭與監督的 DSRA 模組，讓反向注意力能用在多類別分割；插進三個 SOTA 模型平均 Dice 提升 0.50%–1.36%。</p>
+      </section>
+
+      <!-- 2. 研究問題與動機 -->
+      <section class="note-section" id="problem">
+        <h2 data-num="02">研究問題與動機</h2>
+        <p>PraNet-V1 首先在息肉分割中用反向注意力（Reverse Attention, RA）明確建模背景，在前景與背景對比低時特別有效。但作者整理出 V1 的三個限制：</p>
+        <ul>
+          <li><strong>只能做二元分割</strong>：V1 為息肉的「前景／背景」設計，所有前景共用一次 RA 計算，無法區分多個類別。</li>
+          <li><strong>規則式反轉</strong>：RA 權重直接用「1 − 前景機率」算出，沒有帶入額外資訊，前向注意力的錯誤也會原封不動地被繼承。</li>
+          <li><strong>語義模糊的融合</strong>：V1 在高維特徵空間把反向與前向注意力混在一起，前景、背景特徵糾纏，沒有清楚的語義邊界。</li>
+        </ul>
+      </section>
+
+      <!-- 3. 核心方法 -->
+      <section class="note-section" id="method">
+        <h2 data-num="03">核心方法</h2>
+        <figure class="diagram">
+          <svg viewBox="0 0 760 330" role="img" aria-label="PraNet-V2 架構：Encoder 特徵經 PD 產生粗分割，再由 DSRA3 到 DSRA1 逐層細化；DSRA 內部有前景頭與背景頭，並用來自更深層的 reverse gain 修正前景結果">
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" class="dg-head"/>
+              </marker>
+            </defs>
+            <!-- 上排：整體流程 -->
+            <rect class="dg-box" x="10" y="30" width="80" height="50" rx="6"/>
+            <text class="dg-text" x="50" y="55">輸入影像</text>
+            <rect class="dg-box" x="115" y="30" width="110" height="50" rx="6"/>
+            <text class="dg-text" x="170" y="48">Encoder</text>
+            <text class="dg-small" x="170" y="66">F1 – F4</text>
+            <rect class="dg-box" x="250" y="30" width="100" height="50" rx="6"/>
+            <text class="dg-text" x="300" y="48">PD</text>
+            <text class="dg-small" x="300" y="66">粗分割 R4</text>
+            <rect class="dg-box" x="375" y="30" width="90" height="50" rx="6"/>
+            <text class="dg-text" x="420" y="55">DSRA3</text>
+            <rect class="dg-box" x="490" y="30" width="90" height="50" rx="6"/>
+            <text class="dg-text" x="535" y="55">DSRA2</text>
+            <rect class="dg-box dg-box--accent" x="605" y="30" width="90" height="50" rx="6"/>
+            <text class="dg-text" x="650" y="55">DSRA1</text>
+            <text class="dg-small" x="650" y="98">最終前景分割 R1F</text>
+            <path class="dg-arrow" d="M90,55 L113,55" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M225,55 L248,55" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M350,55 L373,55" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M465,55 L488,55" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M580,55 L603,55" marker-end="url(#ah)"/>
+            <path class="dg-dash" d="M535,80 L535,125"/>
+
+            <!-- 下排：DSRA 內部 -->
+            <rect class="dg-box dg-box--soft" x="10" y="125" width="740" height="195" rx="10"/>
+            <text class="dg-small dg-left" x="26" y="142">DSRA 模組內部（第 i 層）</text>
+            <rect class="dg-box" x="30" y="182" width="90" height="40" rx="6"/>
+            <text class="dg-text" x="75" y="202">F(i+1)</text>
+            <rect class="dg-box" x="150" y="182" width="90" height="40" rx="6"/>
+            <text class="dg-text" x="195" y="202">φ 卷積層</text>
+            <rect class="dg-box" x="275" y="150" width="130" height="40" rx="6"/>
+            <text class="dg-text" x="340" y="163">前景頭 Pf</text>
+            <text class="dg-small" x="340" y="180">Dice + CE 監督</text>
+            <rect class="dg-box" x="275" y="215" width="130" height="40" rx="6"/>
+            <text class="dg-text" x="340" y="228">背景頭 Pb</text>
+            <text class="dg-small" x="340" y="245">BCE 監督</text>
+            <rect class="dg-box dg-box--accent" x="470" y="150" width="130" height="40" rx="6"/>
+            <text class="dg-text" x="535" y="170">RF = Pf + Pf∘γ</text>
+            <rect class="dg-box" x="470" y="215" width="130" height="40" rx="6"/>
+            <text class="dg-text" x="535" y="235">RB = Pb</text>
+            <rect class="dg-box" x="635" y="150" width="105" height="40" rx="6"/>
+            <text class="dg-text" x="687" y="163">γ</text>
+            <text class="dg-small" x="687" y="180">reverse gain</text>
+            <rect class="dg-box" x="635" y="215" width="105" height="40" rx="6"/>
+            <text class="dg-text" x="687" y="228">更深層輸出</text>
+            <text class="dg-small" x="687" y="245">RF, RB (i+1)</text>
+            <path class="dg-arrow" d="M120,202 L148,202" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M240,202 L258,202 L258,170 L273,170" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M258,202 L258,235 L273,235" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M405,170 L468,170" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M405,235 L468,235" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M635,170 L602,170" marker-end="url(#ah)"/>
+            <path class="dg-arrow" d="M687,215 L687,192" marker-end="url(#ah)"/>
+            <text class="dg-small" x="380" y="292">γ = Softmax( I(RF(i+1)) − I(RB(i+1)) )，I 為雙線性插值到 F(i+1) 的尺寸</text>
+          </svg>
+          <figcaption>改繪自原論文 Fig. 2，只保留主要資料流。</figcaption>
+        </figure>
+
+        <h3>整體架構：U-Net 式解碼器</h3>
+        <p>Encoder 產生四個尺度的特徵 F1–F4。解碼器只用高階特徵 F2、F3、F4：先由平行部分解碼器（Parallel Partial Decoder, PD）聚合出粗分割結果 R4，再由 DSRA3 → DSRA2 → DSRA1 逐層細化。每一層的輸出都同時包含<strong>各類別的前景圖 RF</strong> 與<strong>對應的背景圖 RB</strong>。</p>
+
+        <h3>雙監督反向注意力（Dual-Supervised Reverse Attention, DSRA）</h3>
+        <p>DSRA 把同一層特徵送進兩個獨立的分割頭：前景頭輸出 Pf、背景頭輸出 Pb，各自有自己的參數與監督訊號。前景結果再用來自更深層的「反向增益（reverse gain）γ」修正：</p>
+        <div class="formula">RF_i = Pf_i + Pf_i ∘ γ                                    (Eq. 1)
+RB_i = Pb_i                                               (Eq. 2)
+{Pf_i, Pb_i} = φ(F_{i+1})                                 (Eq. 3)
+γ = Softmax( I(RF_{i+1}; F_{i+1}) − I(RB_{i+1}; F_{i+1}) ) (Eq. 4)</div>
+        <p>關鍵差異：V1 的背景是「算出來」的（1 − 前景），V2 的背景是「學出來」的，而且融合發生在<strong>標籤空間</strong>（每個像素的類別機率），不是糾纏的高維特徵空間。</p>
+
+        <h3>背景監督與損失函數</h3>
+        <p>從 ground truth 為每個類別產生一張背景遮罩（背景為 1、該物件為 0），組成多通道背景遮罩，用來監督背景頭。總損失為：</p>
+        <div class="formula">L_total = w1·L_Dice + w2·L_CE + w3·L_BCE</div>
+        <p>Dice 處理類別不平衡、CE 做像素級分類，兩者監督前景；BCE 讓背景預測對齊背景遮罩。</p>
+
+        <h3>可插拔</h3>
+        <p>只要分割網路能接兩個分割頭，就能套用 DSRA。作者因此把它接到 Cascaded MERIT、MIST、EMCAD 三個多類別醫學影像分割模型上驗證。</p>
+      </section>
+
+      <!-- 4. 主要貢獻 -->
+      <section class="note-section" id="contributions">
+        <h2 data-num="04">主要貢獻</h2>
+        <ol>
+          <li>提出 DSRA 模組：前景與背景分開處理、分開監督，把反向注意力從二元分割推廣到多類別分割，並組成 PraNet-V2 框架。</li>
+          <li>用顯式的背景監督取代規則式的「1 − 前景」，並在標籤空間融合前景與背景資訊，提升可解釋性。</li>
+          <li>證明 DSRA 能作為插件提升既有 SOTA 模型：在 Synapse 與 ACDC 上平均 Dice 提升 0.50%–1.36%。</li>
+        </ol>
+      </section>
+
+      <!-- 5. 實驗結果 -->
+      <section class="note-section" id="results">
+        <h2 data-num="05">實驗結果</h2>
+        <p><strong>二元分割資料集：</strong>四個息肉資料集 CVC-ClinicDB、CVC-300、Kvasir、ETIS。CVC-300 與 ETIS 不參與訓練，只用來測泛化能力。<br>
+        <strong>多類別資料集：</strong>Synapse（30 例腹部 CT、8 個器官）、ACDC（100 位病人心臟 MRI、3 個結構）。<br>
+        <strong>指標：</strong>mDice、mIoU、wFm、S-m、mEm、MAE；多類別另加 HD95（越低越好）。<br>
+        <strong>訓練設定：</strong>單張 RTX 3090、PyTorch 2.0.1、輸入 352×352、多尺度訓練 {0.75, 1, 1.25}、Adam，學習率 1e-4 <span class="src">Sec. 3.1.2</span></p>
+
+        <h3>息肉分割：V1 vs. V2（mDice %）</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>資料集</th><th>Backbone</th><th>V1</th><th>V2</th><th>差異</th></tr></thead>
+            <tbody>
+              <tr><td>CVC-300</td><td>Res2Net50</td><td>87.06</td><td>89.83</td><td><span class="delta delta--up">+2.77</span></td></tr>
+              <tr><td>ClinicDB</td><td>Res2Net50</td><td>89.84</td><td>92.28</td><td><span class="delta delta--up">+2.44</span></td></tr>
+              <tr><td>Kvasir</td><td>Res2Net50</td><td>89.39</td><td>90.70</td><td><span class="delta delta--up">+1.31</span></td></tr>
+              <tr><td>ETIS</td><td>Res2Net50</td><td>62.75</td><td>64.05</td><td><span class="delta delta--up">+1.30</span></td></tr>
+              <tr><td>CVC-300</td><td>PVTv2-B2</td><td>86.59</td><td>89.89</td><td><span class="delta delta--up">+3.30</span></td></tr>
+              <tr><td>ClinicDB</td><td>PVTv2-B2</td><td>90.96</td><td>93.09</td><td><span class="delta delta--up">+2.13</span></td></tr>
+              <tr><td>Kvasir</td><td>PVTv2-B2</td><td>87.09</td><td>91.52</td><td><span class="delta delta--up">+4.43</span></td></tr>
+              <tr class="hl"><td>ETIS</td><td>PVTv2-B2</td><td>68.32</td><td>76.35</td><td><span class="delta delta--up">+8.03</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-caption">差異為兩欄相減。最亮眼的是未參與訓練的 ETIS：PVTv2-B2 下 mDice <mark>+8.03</mark>、mIoU 60.02 → 68.72（+8.70）、S-m +5.12。但 Res2Net50 下 ETIS 的 mIoU（56.57 → 56.54）與 mEm（80.77 → 79.74）反而略降。 <span class="src">Table 1</span></p>
+
+        <h3>多類別分割：插入 DSRA 前後（mDice %）</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>模型</th><th>資料集</th><th>原始†</th><th>+ DSRA</th><th>差異</th></tr></thead>
+            <tbody>
+              <tr class="hl"><td>MIST</td><td>Synapse</td><td>81.91</td><td>83.27</td><td><span class="delta delta--up">+1.36</span></td></tr>
+              <tr><td>EMCAD-B2</td><td>Synapse</td><td>82.71</td><td>83.75</td><td><span class="delta delta--up">+1.04</span></td></tr>
+              <tr><td>MIST</td><td>ACDC</td><td>91.73</td><td>92.31</td><td><span class="delta delta--up">+0.58</span></td></tr>
+              <tr><td>Cascaded MERIT</td><td>ACDC</td><td>91.78</td><td>92.28</td><td><span class="delta delta--up">+0.50</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-caption">† 原始模型為作者自行重現的數字。Synapse 上 HD95 也下降：MIST 14.93 → 14.11 mm、EMCAD-B2 21.74 → 17.77 mm；膽囊（GB）Dice 71.43 → 75.36（+3.93）。 <span class="src">Table 2</span> <span class="src">Table 3</span></p>
+
+        <h3>消融：損失函數組合（MIST + DSRA）</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>使用的損失</th><th>mDice</th><th>mIoU</th></tr></thead>
+            <tbody>
+              <tr><td>BCE + CE（拿掉 Dice）</td><td>91.91</td><td>85.43</td></tr>
+              <tr><td>BCE + Dice（拿掉 CE）</td><td>92.14</td><td>85.72</td></tr>
+              <tr><td>CE + Dice（拿掉 BCE）</td><td>92.16</td><td>85.84</td></tr>
+              <tr class="hl"><td>BCE + CE + Dice</td><td>92.31</td><td>86.02</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-caption">三種損失缺一不可；拿掉 Dice 掉最多，作者解釋為處理類別不平衡的能力變差。論文未寫明消融用哪個資料集，但完整版 92.31 與 Table 3 的 ACDC 數字相同，推測為 ACDC（待確認）。 <span class="src">Table 4</span></p>
+      </section>
+
+      <!-- 6. 優點與限制 -->
+      <section class="note-section" id="assessment">
+        <h2 data-num="06">優點與限制</h2>
+        <p class="draft-note">草稿，待本人修改：此區塊為 AI 依論文內容草擬的觀點。</p>
+        <h3>優點</h3>
+        <ul>
+          <li>改動概念清楚：把「算出來的背景」換成「學出來的背景」，背景遮罩直接由 ground truth 產生，不需要額外標註。</li>
+          <li>可插拔性強，在三個不同架構上都有一致的正向提升，說服力比只在自家模型上驗證高。</li>
+          <li>在未見過的 ETIS 上提升明顯，顯示對泛化有幫助。</li>
+        </ul>
+        <h3>限制</h3>
+        <ul>
+          <li>多類別上的提升幅度（0.50%–1.36%）不大，且基準數字是作者自行重現，與原論文報告值可能有落差。</li>
+          <li>正文沒有報告加入第二個分割頭後的參數量、計算量或推論速度（待確認附錄是否有）。</li>
+          <li>Res2Net50 在 ETIS 上部分指標退步，提升並非全面。</li>
+          <li>作者在 Discussion 自己承認：仍受限於訓練集的固定類別，無法處理開放世界的未知類別。</li>
+        </ul>
+      </section>
+
+      <!-- 7. 與我研究的關聯 -->
+      <section class="note-section" id="relevance">
+        <h2 data-num="07">與我研究的關聯</h2>
+        <p class="draft-note">草稿，待本人修改：此區塊為 AI 依論文內容草擬的觀點。</p>
+        <ul>
+          <li>當目標物<strong>很小、又和背景對比低</strong>時，正是反向注意力想解決的情境。做小目標偵測或分割時，可以思考在偵測頭旁加一個背景分支，借用「背景顯式監督」的想法。</li>
+          <li>DSRA 的「前景／背景雙頭 + 深層結果回饋修正」是通用設計，可作為改良 YOLO 系列 neck 或 head 時的參考。</li>
+        </ul>
+      </section>
+
+      <!-- 8. 相關論文 -->
+      <section class="note-section" id="related">
+        <h2 data-num="08">相關論文</h2>
+        <ul class="related-list">
+          <li><a href="2026-cvpr-invcoss.html">InvCoSS</a><span>同為醫學影像；InvCoSS 是預訓練方法，下游任務也包含 LiTS、GlaS 等分割。</span></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>雲科大資工碩一</span>
+      <span>筆記內容為個人閱讀整理，數字以原論文為準</span>
+    </div>
+  </footer>
+</body>
+</html>
